@@ -26,15 +26,13 @@ data:
 
     processors:
     - dissect:
-        tokenizer: ""
+        tokenizer: "%{}"
         field: "message"
         target_prefix: "dissect"
 
-    cloud.id: ${ELASTIC_CLOUD_ID}
-    cloud.auth: ${ELASTIC_CLOUD_AUTH}
-
     output.elasticsearch:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
+      protocol: http
       
 ---
 apiVersion: v1

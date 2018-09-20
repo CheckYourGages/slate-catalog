@@ -10,3 +10,16 @@ spec:
     requests:
       storage: {{ .Values.SquidConf.CacheSize }}Mi
   storageClassName: nfs-provisioner
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: filebeat-{{ .Values.Instance }}-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 10Mi
+  storageClassName: nfs-provisioner
