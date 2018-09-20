@@ -42,16 +42,39 @@ spec:
           subPath: osg-frontier-squid-{{ .Values.Instance }}-cache
           name: osg-frontier-squid-{{ .Values.Instance }}-pvc
         - mountPath: /var/log/squid
-          name: varlog
-      - name: fluent-bit
-        image: fluent/fluent-bit:0.13.4
-        imagePullPolicy: IfNotPresent
+          name: varlogsquid
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.0.0-alpha1
+        args: [
+          "-c", "/etc/filebeat.yml",
+          "-e",
+        ]
+        env:
+        - name: ELASTICSEARCH_HOST
+          value: atlas-kibana.mwt2.org
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        - name: ELASTICSEARCH_USERNAME
+          value: elastic
+        - name: ELASTICSEARCH_PASSWORD
+          value: changeme
+        - name: ELASTIC_CLOUD_ID
+          value:
+        - name: ELASTIC_CLOUD_AUTH
+          value:
         securityContext:
           runAsUser: 0
         volumeMounts:
-        - name: fluent-bit-{{ .Values.Instance }}-config
-          mountPath: /fluent-bit/etc/
-        - name: varlog
+        - name: filebeats-{{ .Values.Instance }}-config
+          mountPath: /etc/filebeat.yml
+          readOnly: true
+          subPath: filebeat.yml
+        - name: filebeats-{{ .Values.Instance }}-inputs
+          mountPath: /usr/share/filebeat/inputs.d
+          readOnly: true
+        - name: filebeats-{{ .Values.Instance }}-data
+          mountPath: /usr/share/filebeat/data
+        - name: varlogsquid
           mountPath: /var/log/squid
       volumes:
         - name: osg-frontier-squid-{{ .Values.Instance }}-configuration
@@ -64,8 +87,18 @@ spec:
         - name: osg-frontier-squid-{{ .Values.Instance }}-pvc
           persistentVolumeClaim:
             claimName: osg-frontier-squid-{{ .Values.Instance }}-pvc
-        - name: fluent-bit-{{ .Values.Instance }}-config
+        - name: filebeats-{{ .Values.Instance }}-config
           configMap:
-            name: fluent-bit-{{ .Values.Instance }}-config
-        - name: varlog
+            defaultMode: 0600
+            name: filebeat-{{ .Values.Instance }}-config
+        - name: filebeats-{{ .Values.Instance }}-inputs
+          configMap:
+            defaultMode: 0600
+            name: filebeat-{{ .Values.Instance }}-inputs
+        # data folder stores a registry of read status for all files, so we don't send everything again on a Filebeat pod restart
+        - name: filebeats-{{ .Values.Instance }}-data
+          hostPath:
+            persistentVolumeClaim:
+              claimName: filebeats-{{ .Values.Instance }}-pvc
+        - name: varlogsquid
           emptyDir: {}
